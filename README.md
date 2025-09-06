@@ -1,69 +1,135 @@
-# React + TypeScript + Vite
+# React TD — Tower Defense на React + Canvas
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Минималистичная и быстрая TD-игра для фронтенд-челленджа. Акцент на **UX/UI**, предсказуемую логику и чистую архитектуру. Рендер — Canvas 2D с Hi-DPI и предзагрузкой ассетов.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Быстрый старт
 
-## Expanding the ESLint configuration
+(Требуется Node 18+)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+    npm i
+    npm run dev
+    # открой http://localhost:5173
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Сборка и предпросмотр:
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+    npm run build
+    npm run preview
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🗂 Структура проекта
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+    src/
+      engine/
+        sim.ts        # игровая логика: тики, волны, башни, мобы, снаряды
+        grid.ts       # карта и путь (индексация тайлов)
+        types.ts      # строгие типы Game/Grid/Mob/Tower/Projectile
+      state/
+        store.ts      # zustand: состояние и экшены (tick, placeTower, startWave...)
+      renderers/
+        canvas.ts     # отрисовка поля, дороги, травы, мобов, башен, HP-баров
+      assets/
+        towerImages.ts # загрузчик PNG башен (src/ и public/), кэш, decode()
+        mobImages.ts   # загрузчик PNG мобов (src/ и public/), кэш, decode()
+      ui/
+        App.tsx       # цикл кадров, Hi-DPI канвас, интеграция рендера и HUD
+        Hud.tsx       # панель управления: статус, билд, апгрейд, скорость, старт
+    public/
+      assets/
+        towers/ ...   # альтернативная локация ассетов (если не в src/)
+        mobs/   ...
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+
+## 🎮 Геймплей
+
+- **Тайлы:**  
+  `path` — путь мобов • `buildable` — можно строить • `blocked` — нельзя ни строить, ни проходить.
+- **Башни (3 вида × 3 тира):**
+  - **Arrow** — одиночная цель, высокая скорострельность.  
+  - **Cannon** — урон по области (splash).  
+  - **Frost** — небольшой урон **и** замедление (стэкается по длительности/минимуму фактора).
+- **Мобы:** `normal`, `fast`, `tank`, `flying`.  
+- **Волны:** запускаются по кнопке *Start wave*; защита от повторного старта; авто-переход к следующей после очистки поля.
+- **Жизни:** уменьшаются при прорыве, клампятся до 0 (игра останавливается).
+
+---
+
+## 🕹 Управление
+
+- В блоке **Build** выбери тип башни → клик по свободной `buildable`-клетке — строит.  
+- Клик по башне — выделение; в панели справа доступны **Upgrade**/**Deselect**.  
+- **Start wave** — старт волны; **Pause/Resume**, **Restart**, **Speed ×2** — управление симуляцией.
+
+---
+
+## 🖼 Ассеты (PNG)
+
+Загрузчики ищут файлы **в двух местах** — клади куда удобнее.
+
+- `src/assets/towers/` **или** `public/assets/towers/`
+
+      arrow_t1.png  arrow_t2.png  arrow_t3.png
+      cannon_t1.png cannon_t2.png cannon_t3.png
+      frost_t1.png  frost_t2.png  frost_t3.png
+
+- `src/assets/mobs/` **или** `public/assets/mobs/`
+
+      normal.png  fast.png  tank.png  flying.png
+
+Если файла нет — показывается плейсхолдер, а в консоли логируются оба проверенных пути.
+
+---
+
+## 🖌 Рендер
+
+- **Трава** — процедурный бесшовный паттерн (не мылится на Retina).  
+- **Дорога** — «лента» из нескольких штрихов: тень, грунт, борт, блик.  
+- **Башни/мобы** — PNG с мягкими тенями; корректные **HP-бары** (серый фон + цвет по остаткам).  
+- **Селект** — аккуратный белый круг вокруг выбранной башни.  
+- **Hi-DPI** — канвас масштабируется по `devicePixelRatio`.
+
+---
+
+## ⚙️ Производительность
+
+- Один цикл `requestAnimationFrame`, зависящий только от `running`.  
+- Внутри цикла состояние берётся через `useGame.getState()` — без пересоздания эффекта при изменениях `game`.  
+- Ассеты предзагружаются и кэшируются. (Опционально можно «запекать» фон/дорогу в offscreen-канвас.)
+
+---
+
+## 📈 Баланс (дефолт)
+
+- **Arrow:** dmg 10/16/24, range 2.4/2.6/2.8, rate 1.2/1.5/1.8.  
+- **Cannon:** dmg 16/24/36, range 2.2/2.4/2.6, rate 0.8/1.0/1.2, splash растёт с тиром.  
+- **Frost:** dmg 4/6/8, range 2.0/2.2/2.4, rate 0.7/0.9/1.0, slow ≈50% с увеличением длительности.
+
+Все значения сосредоточены в `engine/sim.ts`.
+
+---
+
+## 🔧 Конфигурация
+
+- Размер тайла — `setTilePx(64)` в `renderers/canvas.ts`.  
+- Карту/путь можно быстро заменить в `engine/grid.ts`.  
+- Стоимость/апгрейды и расписание волн — в `engine/sim.ts`.
+
+---
+
+## 🧪 Тест-чеклист
+
+- [ ] Строительство возможно только на `buildable` и не поверх башен.  
+- [ ] *Start wave* не запускает активную волну повторно.  
+- [ ] Жизни клампятся до 0, симуляция стопается.  
+- [ ] Апгрейд меняет статы и списывает стоимость.  
+- [ ] HP-бары реально уменьшаются (виден урон у всех башен, включая Frost).  
+- [ ] FPS не проваливается при установке/апгрейде башен.
+
+---
+
+## 📜 Лицензия
+
+MIT
