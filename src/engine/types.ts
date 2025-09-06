@@ -47,10 +47,10 @@ export type Wave = { id: number; entries: WaveEntry[] };
 export type Grid = {
   width: number;
   height: number;
-  tiles: ("path" | "buildable" | "blocked")[]; // row-major
-  path: Vec2[]; // массив центров тайлов пути
-  start: Vec2; // первый центр
-  end: Vec2; // последний центр
+  tiles: ("path" | "buildable" | "blocked")[];
+  path: Vec2[];
+  start: Vec2;
+  end: Vec2;
 };
 
 export type Game = {
@@ -60,6 +60,11 @@ export type Game = {
   projectiles: Projectile[];
   money: number;
   lives: number;
-  waveIndex: number; // текущая волна 0-based
+  waveIndex: number;
   grid: Grid;
+  speedMult?: number;
+  spawning: null | {
+    cursor: number;
+    schedule: { t: number; kind: MobType }[];
+  };
 };

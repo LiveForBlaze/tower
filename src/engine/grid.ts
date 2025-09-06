@@ -88,8 +88,8 @@ export function loadGrid(): Grid {
 
   // 3) Если P нет — строим A* от левого к правому краю по buildable
   if (!intPath) {
-    const start = findEdgeCell(tiles, width, height, "left", isBuildable);
-    const goal = findEdgeCell(tiles, width, height, "right", isBuildable);
+    const start = findEdgeCell(width, height, "left", isBuildable);
+    const goal = findEdgeCell(width, height, "right", isBuildable);
     intPath = astar(start, goal, (x, y) => isBuildable(x, y));
     // помечаем найденные клетки как path, чтобы получилось 3 типа
     if (intPath) {
@@ -212,7 +212,6 @@ function astar(
 }
 
 function findEdgeCell(
-  tiles: Grid["tiles"],
   width: number,
   height: number,
   side: "left" | "right",
