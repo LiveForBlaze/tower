@@ -1,135 +1,135 @@
-# React TD — Tower Defense на React + Canvas
+# React TD — Tower Defense built with React + Canvas
 
-Минималистичная и быстрая TD-игра для фронтенд-челленджа. Акцент на **UX/UI**, предсказуемую логику и чистую архитектуру. Рендер — Canvas 2D с Hi-DPI и предзагрузкой ассетов.
+A minimal, fast tower-defense game crafted for a frontend challenge. Emphasis on **UX/UI**, predictable logic, and a clean, testable architecture. Rendering uses Canvas 2D with Hi-DPI support and asset preloading.
 
 ---
 
-## 🚀 Быстрый старт
+## 🚀 Quick Start
 
-(Требуется Node 18+)
+(Requires Node 18+)
 
     npm i
     npm run dev
-    # открой http://localhost:5173
+    # open http://localhost:5173
 
-Сборка и предпросмотр:
+Build & preview:
 
     npm run build
     npm run preview
 
 ---
 
-## 🗂 Структура проекта
+## 🗂 Project Structure
 
     src/
       engine/
-        sim.ts        # игровая логика: тики, волны, башни, мобы, снаряды
-        grid.ts       # карта и путь (индексация тайлов)
-        types.ts      # строгие типы Game/Grid/Mob/Tower/Projectile
+        sim.ts         # game logic: ticks, waves, towers, mobs, projectiles
+        grid.ts        # map and path (tile indexing)
+        types.ts       # strict types for Game/Grid/Mob/Tower/Projectile
       state/
-        store.ts      # zustand: состояние и экшены (tick, placeTower, startWave...)
+        store.ts       # zustand store: actions (tick, placeTower, startWave, etc.)
       renderers/
-        canvas.ts     # отрисовка поля, дороги, травы, мобов, башен, HP-баров
+        canvas.ts      # drawing board, road, grass, mobs, towers, HP bars
       assets/
-        towerImages.ts # загрузчик PNG башен (src/ и public/), кэш, decode()
-        mobImages.ts   # загрузчик PNG мобов (src/ и public/), кэш, decode()
+        towerImages.ts # PNG loader for towers (supports src/ and public/), cache, decode()
+        mobImages.ts   # PNG loader for mobs (supports src/ and public/), cache, decode()
       ui/
-        App.tsx       # цикл кадров, Hi-DPI канвас, интеграция рендера и HUD
-        Hud.tsx       # панель управления: статус, билд, апгрейд, скорость, старт
+        App.tsx        # frame loop, Hi-DPI canvas, render + HUD integration
+        Hud.tsx        # controls panel: status, build/upgrade, speed, start
     public/
       assets/
-        towers/ ...   # альтернативная локация ассетов (если не в src/)
+        towers/ ...    # alternative place for assets (if not under src/)
         mobs/   ...
 
 ---
 
-## 🎮 Геймплей
+## 🎮 Gameplay
 
-- **Тайлы:**  
-  `path` — путь мобов • `buildable` — можно строить • `blocked` — нельзя ни строить, ни проходить.
-- **Башни (3 вида × 3 тира):**
-  - **Arrow** — одиночная цель, высокая скорострельность.  
-  - **Cannon** — урон по области (splash).  
-  - **Frost** — небольшой урон **и** замедление (стэкается по длительности/минимуму фактора).
-- **Мобы:** `normal`, `fast`, `tank`, `flying`.  
-- **Волны:** запускаются по кнопке *Start wave*; защита от повторного старта; авто-переход к следующей после очистки поля.
-- **Жизни:** уменьшаются при прорыве, клампятся до 0 (игра останавливается).
-
----
-
-## 🕹 Управление
-
-- В блоке **Build** выбери тип башни → клик по свободной `buildable`-клетке — строит.  
-- Клик по башне — выделение; в панели справа доступны **Upgrade**/**Deselect**.  
-- **Start wave** — старт волны; **Pause/Resume**, **Restart**, **Speed ×2** — управление симуляцией.
+- **Tiles:**  
+  `path` — enemy route • `buildable` — can build here • `blocked` — neither build nor pass.
+- **Towers (3 types × 3 tiers):**
+  - **Arrow** — single target, high fire rate.  
+  - **Cannon** — area damage (splash).  
+  - **Frost** — small damage **and** slow (stacks by duration; slow factor takes the minimum).
+- **Mobs:** `normal`, `fast`, `tank`, `flying`.  
+- **Waves:** started with *Start wave*; protected from double-start; auto-advance to the next wave after the field is cleared.
+- **Lives:** decrease on leaks and clamp at 0 (simulation stops on game over).
 
 ---
 
-## 🖼 Ассеты (PNG)
+## 🕹 Controls
 
-Загрузчики ищут файлы **в двух местах** — клади куда удобнее.
+- In **Build**, pick a tower → click an empty `buildable` tile to place it.  
+- Click a tower to select; use **Upgrade** / **Deselect** in the side panel.  
+- **Start wave** to spawn; **Pause/Resume**, **Restart**, **Speed ×2** for simulation control.
 
-- `src/assets/towers/` **или** `public/assets/towers/`
+---
+
+## 🖼 Assets (PNG)
+
+Loaders search in **two locations** — use whichever is convenient.
+
+- `src/assets/towers/` **or** `public/assets/towers/`
 
       arrow_t1.png  arrow_t2.png  arrow_t3.png
       cannon_t1.png cannon_t2.png cannon_t3.png
       frost_t1.png  frost_t2.png  frost_t3.png
 
-- `src/assets/mobs/` **или** `public/assets/mobs/`
+- `src/assets/mobs/` **or** `public/assets/mobs/`
 
       normal.png  fast.png  tank.png  flying.png
 
-Если файла нет — показывается плейсхолдер, а в консоли логируются оба проверенных пути.
+If a file is missing, a visible placeholder is rendered and both searched paths are logged to the console.
 
 ---
 
-## 🖌 Рендер
+## 🖌 Rendering
 
-- **Трава** — процедурный бесшовный паттерн (не мылится на Retina).  
-- **Дорога** — «лента» из нескольких штрихов: тень, грунт, борт, блик.  
-- **Башни/мобы** — PNG с мягкими тенями; корректные **HP-бары** (серый фон + цвет по остаткам).  
-- **Селект** — аккуратный белый круг вокруг выбранной башни.  
-- **Hi-DPI** — канвас масштабируется по `devicePixelRatio`.
-
----
-
-## ⚙️ Производительность
-
-- Один цикл `requestAnimationFrame`, зависящий только от `running`.  
-- Внутри цикла состояние берётся через `useGame.getState()` — без пересоздания эффекта при изменениях `game`.  
-- Ассеты предзагружаются и кэшируются. (Опционально можно «запекать» фон/дорогу в offscreen-канвас.)
+- **Grass** — procedural seamless pattern (crisp on Retina).  
+- **Road** — “ribbon” composed of multiple strokes: shadow, ground, border, highlight.  
+- **Towers/Mobs** — PNG sprites with soft shadows; correct **HP bars** (gray track + color by remaining health).  
+- **Selection** — subtle white ring around the selected tower.  
+- **Hi-DPI** — canvas scales with `devicePixelRatio`.
 
 ---
 
-## 📈 Баланс (дефолт)
+## ⚙️ Performance
 
-- **Arrow:** dmg 10/16/24, range 2.4/2.6/2.8, rate 1.2/1.5/1.8.  
-- **Cannon:** dmg 16/24/36, range 2.2/2.4/2.6, rate 0.8/1.0/1.2, splash растёт с тиром.  
-- **Frost:** dmg 4/6/8, range 2.0/2.2/2.4, rate 0.7/0.9/1.0, slow ≈50% с увеличением длительности.
-
-Все значения сосредоточены в `engine/sim.ts`.
+- A single `requestAnimationFrame` loop that depends only on `running`.  
+- Inside the loop, state is read via `useGame.getState()` — no effect re-creation when `game` changes.  
+- Assets are preloaded and cached. (Optionally, background/road can be baked to an offscreen canvas.)
 
 ---
 
-## 🔧 Конфигурация
+## 📈 Default Balance
 
-- Размер тайла — `setTilePx(64)` в `renderers/canvas.ts`.  
-- Карту/путь можно быстро заменить в `engine/grid.ts`.  
-- Стоимость/апгрейды и расписание волн — в `engine/sim.ts`.
+- **Arrow:** dmg 10 / 16 / 24, range 2.4 / 2.6 / 2.8, rate 1.2 / 1.5 / 1.8.  
+- **Cannon:** dmg 16 / 24 / 36, range 2.2 / 2.4 / 2.6, rate 0.8 / 1.0 / 1.2; splash increases by tier.  
+- **Frost:** dmg 4 / 6 / 8, range 2.0 / 2.2 / 2.4, rate 0.7 / 0.9 / 1.0; slow ≈50% with longer duration per tier.
 
----
-
-## 🧪 Тест-чеклист
-
-- [ ] Строительство возможно только на `buildable` и не поверх башен.  
-- [ ] *Start wave* не запускает активную волну повторно.  
-- [ ] Жизни клампятся до 0, симуляция стопается.  
-- [ ] Апгрейд меняет статы и списывает стоимость.  
-- [ ] HP-бары реально уменьшаются (виден урон у всех башен, включая Frost).  
-- [ ] FPS не проваливается при установке/апгрейде башен.
+All values live in `engine/sim.ts`.
 
 ---
 
-## 📜 Лицензия
+## 🔧 Configuration
+
+- Tile size — `setTilePx(64)` in `renderers/canvas.ts`.  
+- Map/path — edit in `engine/grid.ts`.  
+- Costs, upgrades, and wave schedule — in `engine/sim.ts`.
+
+---
+
+## 🧪 Test Checklist
+
+- [ ] Building is only possible on `buildable` and not on occupied tiles.  
+- [ ] *Start wave* does not re-trigger an active wave.  
+- [ ] Lives clamp at 0; simulation stops.  
+- [ ] Upgrade changes stats and deducts the cost.  
+- [ ] HP bars visibly decrease (damage is visible for all towers, including Frost).  
+- [ ] FPS stays stable when placing/upgrading towers.
+
+---
+
+## 📜 License
 
 MIT
